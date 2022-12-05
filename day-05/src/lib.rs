@@ -86,6 +86,7 @@ pub fn p1(lines: &Vec<String>) -> String {
     for line in lines {
         if line.is_empty() { // moves start here
             harbor.rev_stacks();
+            // println!("Before moves: {}", harbor.to_string());
         } else if line.starts_with("move") {
             let m = Move::from_str(line);
             assert!(m.src < n);
@@ -101,6 +102,7 @@ pub fn p1(lines: &Vec<String>) -> String {
         } else { //" 1   2   3   4   5   6   7   8   9 "
         }
     }
+    println!("After moves: {}", harbor.to_string());
     harbor.top_as_str()
 }
 
@@ -111,6 +113,7 @@ pub fn p2(lines: &Vec<String>) -> String {
     for line in lines {
         if line.is_empty() {
             harbor.rev_stacks();
+            // println!("Before moves: {}", harbor.to_string());
         } else if line.starts_with("move") { //"move 1 from 8 to 1"
             let m = Move::from_str(line);
             assert!(m.src < n);
@@ -126,7 +129,7 @@ pub fn p2(lines: &Vec<String>) -> String {
         } else { //" 1   2   3   4   5   6   7   8   9 "
         }
     }
-    println!("{}", harbor.to_string());
+    println!("After moves: {}", harbor.to_string());
     harbor.top_as_str()
 }
 
