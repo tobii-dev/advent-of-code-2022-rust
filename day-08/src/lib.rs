@@ -82,34 +82,12 @@ impl Grid {
 	}
 
 	fn is_hidden(&self, x: usize, y: usize) -> bool {
-		if self.is_edge(x, y) {
-			return false;
-		};
+		if self.is_edge(x, y) { return false; };
 		let height = self.get(x, y).unwrap().height;
-		if (0..x)
-			.find(|&x| self.get(x, y).unwrap().height >= height)
-			.is_none()
-		{
-			return false;
-		}
-		if (0..y)
-			.find(|&y| self.get(x, y).unwrap().height >= height)
-			.is_none()
-		{
-			return false;
-		}
-		if (x + 1..self.n)
-			.find(|&x| self.get(x, y).unwrap().height >= height)
-			.is_none()
-		{
-			return false;
-		}
-		if (y + 1..self.n)
-			.find(|&y| self.get(x, y).unwrap().height >= height)
-			.is_none()
-		{
-			return false;
-		}
+		if !(0..x).any(|x| self.get(x, y).unwrap().height >= height) { return false; }
+		if !(0..y).any(|y| self.get(x, y).unwrap().height >= height) { return false; }
+		if !(x + 1..self.n).any(|x| self.get(x, y).unwrap().height >= height) { return false; }
+		if !(y + 1..self.n).any(|y| self.get(x, y).unwrap().height >= height) { return false; }
 		true
 	}
 
@@ -152,14 +130,14 @@ impl Grid {
 }
 
 pub fn p1(lines: &Vec<String>) -> usize {
-	let mut grid = Grid::from(&lines);
+	let mut grid = Grid::from(lines);
 	let vis_count = grid.calc_visible();
 	println!("{grid}");
 	vis_count
 }
 
 pub fn p2(lines: &Vec<String>) -> usize {
-	let mut grid = Grid::from(&lines);
+	let mut grid = Grid::from(lines);
 	let top = grid.calc_top_scenic_score();
 	println!("{grid}");
 	top
