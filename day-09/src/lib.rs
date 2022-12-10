@@ -4,25 +4,20 @@ struct Pos {
 	y: isize,
 }
 
-impl std::fmt::Display for Pos {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-		let (x, y) = (self.x, self.y);
-		write!(f, "[{x}, {y}]")?;
-		Ok(())
-	}
-}
-
 impl Pos {
 	fn follow(&mut self, next: &Pos) -> bool {
-		if (next.x - 1..=next.x + 1).contains(&self.x)
-			&& (next.y - 1..=next.y + 1).contains(&self.y)
-		{
-			return false; // no need to move
-		}
+		if self.contacts(next) {
+			return false;
+		};
 		let (dx, dy) = (next.x - self.x, next.y - self.y);
 		self.x += dx.signum();
 		self.y += dy.signum();
 		true
+	}
+
+	fn contacts(&self, other: &Pos) -> bool {
+		(other.x - 1..=other.x + 1).contains(&self.x)
+			&& (other.y - 1..=other.y + 1).contains(&self.y)
 	}
 }
 
@@ -36,42 +31,6 @@ struct Grid {
 	head: Pos,
 	tails: Vec<Pos>,
 	visits: std::collections::HashSet<Pos>,
-}
-
-impl std::fmt::Display for Grid {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-		for y in self.y_min..=self.y_max {
-			for x in self.x_min..=self.x_max {
-				let pos = Pos { x, y };
-				let is_visit = self.visited(&pos);
-				let is_tail = self.tails.iter().any(|p| (p.x == x) && (p.y == y));
-				let is_head = self.head == pos;
-				let mut c = " ";
-				if is_visit {
-					write!(f, "{{")?;
-					c = "}";
-				} else {
-					write!(f, " ")?;
-				}
-				if is_head && is_tail {
-					write!(f, "{:>2}{c}", "X")?;
-				} else if is_head {
-					write!(f, "{:>2}{c}", "H")?;
-				} else if is_tail {
-					let v = self
-						.tails
-						.iter()
-						.position(|p| p.x == x && p.y == y)
-						.unwrap();
-					write!(f, "{v:>2}{c}")?;
-				} else {
-					write!(f, "{:>2}{c}", "·")?;
-				}
-			}
-			writeln!(f)?;
-		}
-		Ok(())
-	}
 }
 
 impl Grid {
@@ -128,24 +87,15 @@ impl Grid {
 				tail.follow(&next);
 				next = *tail;
 			}
-			self.update_visits();
+			self.visits.insert(next);
 		}
-	}
-
-	fn update_visits(&mut self) -> bool {
-		let tail = self.tails.last().unwrap();
-		self.visits.insert(*tail)
-	}
-
-	fn visited(&self, p: &Pos) -> bool {
-		self.visits.contains(p)
 	}
 }
 
 pub fn p1(lines: &Vec<String>) -> usize {
 	let grid = Grid::from(lines, 1);
 	println!(
-		"sizes: {}x{}",
+		"Grid: {}x{}",
 		grid.x_max - grid.x_min,
 		grid.y_max - grid.y_min
 	);
@@ -155,7 +105,7 @@ pub fn p1(lines: &Vec<String>) -> usize {
 pub fn p2(lines: &Vec<String>) -> usize {
 	let grid = Grid::from(lines, 9);
 	println!(
-		"sizes: {}x{}",
+		"Grid: {}x{}",
 		grid.x_max - grid.x_min,
 		grid.y_max - grid.y_min
 	);
