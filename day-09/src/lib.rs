@@ -77,8 +77,6 @@ impl std::fmt::Display for Grid {
 impl Grid {
 	fn new(c: usize) -> Self {
 		let z = Pos { x: 0, y: 0 };
-		let mut s = std::collections::HashSet::new();
-		s.insert(z);
 		Grid {
 			x_min: 0,
 			y_min: 0,
@@ -86,7 +84,7 @@ impl Grid {
 			y_max: 0,
 			head: z,
 			tails: vec![z; c],
-			visits: s,
+			visits: std::collections::HashSet::from([z]),
 		}
 	}
 
