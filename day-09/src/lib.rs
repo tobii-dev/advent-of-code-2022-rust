@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 struct Pos {
 	x: isize,
 	y: isize,
@@ -24,49 +24,6 @@ impl Pos {
 		self.y += dy.signum();
 		true
 	}
-
-	#[allow(unused)]
-	fn diags(&self) -> [Pos; 4] {
-		[
-			Pos {
-				x: self.x - 1,
-				y: self.y - 1,
-			}, //LU
-			Pos {
-				x: self.x + 1,
-				y: self.y - 1,
-			}, //RU
-			Pos {
-				x: self.x + 1,
-				y: self.y + 1,
-			}, //RD
-			Pos {
-				x: self.x - 1,
-				y: self.y + 1,
-			}, //LD
-		]
-	}
-	#[allow(unused)]
-	fn cross(&self) -> [Pos; 4] {
-		[
-			Pos {
-				x: self.x - 1,
-				y: self.y,
-			},
-			Pos {
-				x: self.x,
-				y: self.y - 1,
-			},
-			Pos {
-				x: self.x + 1,
-				y: self.y,
-			},
-			Pos {
-				x: self.x,
-				y: self.y + 1,
-			},
-		]
-	}
 }
 
 struct Grid {
@@ -78,16 +35,17 @@ struct Grid {
 
 	head: Pos,
 	tails: Vec<Pos>,
-	tail_visits: Vec<Pos>,
+	visits: std::collections::HashSet<Pos>,
 }
 
 impl std::fmt::Display for Grid {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
 		for y in self.y_min..=self.y_max {
 			for x in self.x_min..=self.x_max {
-				let is_visit = self.tail_visits.iter().any(|p| (p.x == x) && (p.y == y));
+				let pos = Pos { x, y };
+				let is_visit = self.visited(&pos);
 				let is_tail = self.tails.iter().any(|p| (p.x == x) && (p.y == y));
-				let is_head = (self.head.x == x) && (self.head.y == y);
+				let is_head = self.head == pos;
 				let mut c = " ";
 				if is_visit {
 					write!(f, "{{")?;
@@ -118,14 +76,17 @@ impl std::fmt::Display for Grid {
 
 impl Grid {
 	fn new(c: usize) -> Self {
+		let z = Pos { x: 0, y: 0 };
+		let mut s = std::collections::HashSet::new();
+		s.insert(z);
 		Grid {
 			x_min: 0,
 			y_min: 0,
 			x_max: 0,
 			y_max: 0,
-			head: Pos { x: 0, y: 0 },
-			tails: vec![Pos { x: 0, y: 0 }; c],
-			tail_visits: vec![Pos { x: 0, y: 0 }],
+			head: z,
+			tails: vec![z; c],
+			visits: s,
 		}
 	}
 
@@ -138,26 +99,17 @@ impl Grid {
 				words.next().unwrap().parse::<usize>().unwrap(),
 			);
 			match dir {
-				"L" => {
-					grid.update_head(count, -1, 0);
-				}
-				"U" => {
-					grid.update_head(count, 0, -1);
-				}
-				"R" => {
-					grid.update_head(count, 1, 0);
-				}
-				"D" => {
-					grid.update_head(count, 0, 1);
-				}
+				"L" => grid.update_head(count, -1, 0),
+				"U" => grid.update_head(count, 0, -1),
+				"R" => grid.update_head(count, 1, 0),
+				"D" => grid.update_head(count, 0, 1),
 				_ => unreachable!(),
-			}
+			};
 		}
 		grid
 	}
 
-	fn update_head(&mut self, count: usize, dx: isize, dy: isize) -> bool {
-		let mut update = false;
+	fn update_head(&mut self, count: usize, dx: isize, dy: isize) {
 		for _ in 0..count {
 			self.head.x += dx;
 			self.head.y += dy;
@@ -175,35 +127,41 @@ impl Grid {
 			}
 			let mut next = self.head;
 			for tail in self.tails.iter_mut() {
-				if tail.follow(&next) {
-				}
+				tail.follow(&next);
 				next = *tail;
 			}
-			update = self.update_visits();
+			self.update_visits();
 		}
-		update
 	}
 
 	fn update_visits(&mut self) -> bool {
 		let tail = self.tails.last().unwrap();
-		if !self.tail_visits.iter().any(|p| p == tail) {
-			self.tail_visits.push(*tail);
-			return true;
-		}
-		false
+		self.visits.insert(*tail)
+	}
+
+	fn visited(&self, p: &Pos) -> bool {
+		self.visits.contains(p)
 	}
 }
 
 pub fn p1(lines: &Vec<String>) -> usize {
 	let grid = Grid::from(lines, 1);
-    // println!("{grid}");
-	grid.tail_visits.len()
+	println!(
+		"sizes: {}x{}",
+		grid.x_max - grid.x_min,
+		grid.y_max - grid.y_min
+	);
+	grid.visits.len()
 }
 
 pub fn p2(lines: &Vec<String>) -> usize {
 	let grid = Grid::from(lines, 9);
-    // println!("{grid}");
-	grid.tail_visits.len()
+	println!(
+		"sizes: {}x{}",
+		grid.x_max - grid.x_min,
+		grid.y_max - grid.y_min
+	);
+	grid.visits.len()
 }
 
 #[cfg(test)]
