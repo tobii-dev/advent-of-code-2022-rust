@@ -1,5 +1,8 @@
 const KEY_CYCLES: [usize; 6] = [20, 60, 100, 140, 180, 220];
 
+const SCREEN_X: usize = 40;
+const SCREEN_Y: usize = 6;
+
 enum Op {
 	Noop,
 	AddX(isize),
@@ -9,6 +12,7 @@ struct Radio {
 	x: isize,
 	pc: usize,
 	signals: Vec<isize>,
+	screen: [bool; SCREEN_X * SCREEN_Y],
 }
 
 impl Radio {
@@ -17,6 +21,7 @@ impl Radio {
 			x: 1,
 			pc: 0,
 			signals: vec![],
+			screen: [false; SCREEN_X * SCREEN_Y],
 		}
 	}
 
@@ -48,11 +53,33 @@ impl Radio {
 	}
 
 	fn tick(&mut self) {
+		self.crt();
 		self.pc += 1;
 		if KEY_CYCLES.contains(&self.pc) {
-			let v: isize = self.pc.try_into().unwrap();
-			self.signals.push(v * self.x);
+			self.signals.push(self.pc as isize * self.x);
 		}
+	}
+
+	fn crt(&mut self) {
+		let pos: isize = (self.pc % SCREEN_X).try_into().unwrap();
+		if (self.x - 1..=self.x + 1).contains(&pos) {
+			self.screen[self.pc] = true;
+		};
+	}
+
+	fn display(&self) -> String {
+		let mut display = "".to_string();
+		for row in self.screen.chunks(SCREEN_X) {
+			for px in row {
+				if *px {
+					display.push('#');
+				} else {
+					display.push('.');
+				}
+			}
+			display.push('\n');
+		}
+		display
 	}
 }
 
@@ -61,10 +88,10 @@ pub fn p1(lines: &Vec<String>) -> isize {
 	radio.signals.iter().sum()
 }
 
-// pub fn p2(lines: &Vec<String>) -> usize {
-// 	let radio = Radio::from(lines);
-//     radio.signals.iter().sum()
-// }
+pub fn p2(lines: &Vec<String>) -> String {
+	let radio = Radio::from(lines);
+	radio.display()
+}
 
 #[cfg(test)]
 mod tests {
@@ -82,36 +109,50 @@ mod tests {
 		assert_eq!(r, 13140);
 	}
 
-	// #[test]
-	// fn part1() {
-	// 	let fd = std::fs::File::open("input.txt").unwrap();
-	// 	let lines: Vec<String> = std::io::BufReader::new(fd)
-	// 		.lines()
-	// 		.map(|l| l.unwrap())
-	// 		.collect();
-	// 	let r = p1(&lines);
-	// 	assert_eq!(r, 5981);
-	// }
-	//
-	// #[test]
-	// fn example2() {
-	// 	let fd = std::fs::File::open("example2.txt").unwrap();
-	// 	let mut lines: Vec<String> = std::io::BufReader::new(fd)
-	// 		.lines()
-	// 		.map(|l| l.unwrap())
-	// 		.collect();
-	// 	let r = p2(&mut lines);
-	// 	assert_eq!(r, 36);
-	// }
-	//
-	// #[test]
-	// fn part2() {
-	// 	let fd = std::fs::File::open("input.txt").unwrap();
-	// 	let mut lines: Vec<String> = std::io::BufReader::new(fd)
-	// 		.lines()
-	// 		.map(|l| l.unwrap())
-	// 		.collect();
-	// 	let r = p2(&mut lines);
-	// 	assert_eq!(r, 2352);
-	// }
+	#[test]
+	fn part1() {
+		let fd = std::fs::File::open("input.txt").unwrap();
+		let lines: Vec<String> = std::io::BufReader::new(fd)
+			.lines()
+			.map(|l| l.unwrap())
+			.collect();
+		let r = p1(&lines);
+		assert_eq!(r, 14060);
+	}
+
+	#[test]
+	fn example2() {
+		let fd = std::fs::File::open("example.txt").unwrap();
+		let mut lines: Vec<String> = std::io::BufReader::new(fd)
+			.lines()
+			.map(|l| l.unwrap())
+			.collect();
+		let r = p2(&mut lines);
+		let mut ans = "".to_string();
+		ans.push_str("##..##..##..##..##..##..##..##..##..##..\n");
+		ans.push_str("###...###...###...###...###...###...###.\n");
+		ans.push_str("####....####....####....####....####....\n");
+		ans.push_str("#####.....#####.....#####.....#####.....\n");
+		ans.push_str("######......######......######......####\n");
+		ans.push_str("#######.......#######.......#######.....\n");
+		assert_eq!(r, ans);
+	}
+
+	#[test]
+	fn part2() {
+		let fd = std::fs::File::open("input.txt").unwrap();
+		let mut lines: Vec<String> = std::io::BufReader::new(fd)
+			.lines()
+			.map(|l| l.unwrap())
+			.collect();
+		let r = p2(&mut lines);
+		let mut ans = "".to_string();
+		ans.push_str("###...##..###..#..#.####.#..#.####...##.\n");
+		ans.push_str("#..#.#..#.#..#.#.#..#....#.#..#.......#.\n");
+		ans.push_str("#..#.#..#.#..#.##...###..##...###.....#.\n");
+		ans.push_str("###..####.###..#.#..#....#.#..#.......#.\n");
+		ans.push_str("#....#..#.#....#.#..#....#.#..#....#..#.\n");
+		ans.push_str("#....#..#.#....#..#.#....#..#.####..##..\n");
+		assert_eq!(r, ans);
+	}
 }
