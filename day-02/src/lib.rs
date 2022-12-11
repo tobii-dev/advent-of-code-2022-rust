@@ -30,19 +30,18 @@ impl Hand {
 
 	fn vs(&self, op: &Hand) -> Round {
 		if self.beats() == *op {
-			//own hand beats opp
-			return Round::Win;
+			Round::Win
 		} else if op.beats() == *self {
-			// opp beats own hand
-			return Round::Loss;
+			Round::Loss
+		} else {
+			Round::Draw
 		}
-		return Round::Draw;
 	}
 
+	/// Score gained for self after playing one round of self vs op
 	fn score(&self, op: &Hand) -> usize {
-		// total score for self after playing round of self vs op
 		let shape_score = *self as usize;
-		let round_score = *&(self.vs(op)) as usize;
+		let round_score = self.vs(op) as usize;
 		shape_score + round_score
 	}
 
@@ -62,7 +61,7 @@ impl Round {
 			"X" => Round::Loss,
 			"Y" => Round::Draw,
 			"Z" => Round::Win,
-			_ => unreachable!("Can't create Hand::{{}} from_str: {x}"),
+			_ => unreachable!("Can't create Round::{{}} from_str: {x}"),
 		}
 	}
 }
@@ -71,8 +70,8 @@ pub fn p1(lines: &Vec<String>) -> usize {
 	let mut total = 0;
 	for line in lines {
 		let mut words = line.split_whitespace();
-		let hand_opp = Hand::from_str(&words.next().unwrap());
-		let hand_own = Hand::from_str(&words.next().unwrap());
+		let hand_opp = Hand::from_str(words.next().unwrap());
+		let hand_own = Hand::from_str(words.next().unwrap());
 		let s = hand_own.score(&hand_opp);
 		total += s;
 	}
@@ -83,10 +82,10 @@ pub fn p2(lines: &Vec<String>) -> usize {
 	let mut total = 0;
 	for line in lines {
 		let mut words = line.split_whitespace();
-		let hand_opp = Hand::from_str(&words.next().unwrap());
-		let desired_round = Round::from_str(&words.next().unwrap());
+		let hand_opp = Hand::from_str(words.next().unwrap());
+		let desired_round = Round::from_str(words.next().unwrap());
 		let hand_own = match desired_round {
-			Round::Draw => hand_opp.clone(),
+			Round::Draw => hand_opp,
 			Round::Loss => hand_opp.beats(),
 			Round::Win => hand_opp.loses(),
 		};

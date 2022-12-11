@@ -8,8 +8,8 @@ pub fn item_as_bit(item: &char) -> u64 {
 	} else {
 		unreachable!("Can't item_as_bit({item})");
 	};
-	assert!((1 <= sh) && (sh <= 52));
-	(1 as u64) << sh
+	assert!((1..=52).contains(&sh));
+	1_u64 << sh
 }
 
 pub fn p1(lines: &Vec<String>) -> usize {
@@ -33,7 +33,7 @@ pub fn p2(lines: &mut Vec<String>) -> usize {
 	let mut total = 0;
 	assert!(lines.len() % 3 == 0);
 	for group in lines.chunks(3) {
-		let mut overlap = !0u64; // fill with 1s
+		let mut overlap = !0u64;
 		assert!(overlap.count_ones() == 64);
 		for line in group {
 			let mut bits = 0u64;

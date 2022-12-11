@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug)]
 struct Harbour {
 	sections: Vec<Vec<char>>,
@@ -20,6 +22,7 @@ impl Harbour {
 		}
 	}
 
+	/// with old boring 9000 crane...
 	fn do_move(&mut self, m: &Move) {
 		for _ in 0..m.count {
 			let c = self.sections[m.src].pop().unwrap();
@@ -49,18 +52,20 @@ impl Harbour {
 		}
 		s
 	}
+}
 
-	fn to_string(&self) -> String {
+impl Display for Harbour {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let n = self.sections.len();
-		let mut s = format!("Harbour with {n} sections: ");
+		write!(f, "Harbour with {n} sections:")?;
 		for (i, stack) in self.sections.iter().enumerate() {
-			let mut ss = "[".to_string();
+			writeln!(f, "{i} = [")?;
 			for &c in stack.iter() {
-				ss.push(c);
+				write!(f, "{c}")?;
 			}
-			s.push_str(&format!("\n{i} = {ss}"));
+			write!(f, "]")?;
 		}
-		s
+		Ok(())
 	}
 }
 
@@ -71,7 +76,7 @@ struct Move {
 }
 
 impl Move {
-	fn from_str(s: &String) -> Self {
+	fn from_str(s: &str) -> Self {
 		let words: Vec<&str> = s.split_whitespace().collect();
 		let count = words.get(1).unwrap().parse::<usize>().unwrap();
 		let src = words.get(3).unwrap().parse::<usize>().unwrap() - 1;
@@ -82,58 +87,56 @@ impl Move {
 
 pub fn p1(lines: &Vec<String>) -> String {
 	let n = (lines[0].len() / 4) + 1; // to get number of sections
-	let mut harbor = Harbour::new(n);
+	let mut harbour = Harbour::new(n);
 	for line in lines {
 		if line.is_empty() {
 			// moves start here
-			harbor.rev_stacks();
-			// println!("Before moves: {}", harbor.to_string());
+			harbour.rev_stacks();
 		} else if line.starts_with("move") {
 			let m = Move::from_str(line);
 			assert!(m.src < n);
 			assert!(m.dst < n);
-			harbor.do_move(&m); // move normal
-		} else if line.contains("[") {
+			harbour.do_move(&m); // move normal
+		} else if line.contains('[') {
 			//"[_] [_] [_] [_] [_] [_] [_] [_] [_]"
 			for section in 0..n {
 				let container: char = line.chars().nth(1 + section * 4).unwrap();
 				if container.is_ascii_uppercase() {
-					harbor.push_container(section, container);
+					harbour.push_container(section, container);
 				}
 			}
 		} else { //" 1   2   3   4   5   6   7   8   9 "
 		}
 	}
-	println!("After moves: {}", harbor.to_string());
-	harbor.top_as_str()
+	println!("After moves: {harbour}");
+	harbour.top_as_str()
 }
 
 pub fn p2(lines: &Vec<String>) -> String {
 	let n = (lines[0].len() / 4) + 1;
-	let mut harbor = Harbour::new(n);
+	let mut harbour = Harbour::new(n);
 	for line in lines {
 		if line.is_empty() {
-			harbor.rev_stacks();
-			// println!("Before moves: {}", harbor.to_string());
+			harbour.rev_stacks();
 		} else if line.starts_with("move") {
 			//"move 1 from 8 to 1"
 			let m = Move::from_str(line);
 			assert!(m.src < n);
 			assert!(m.dst < n);
-			harbor.do_move_crane(&m);
-		} else if line.contains("[") {
+			harbour.do_move_crane(&m);
+		} else if line.contains('[') {
 			//"[1] [2] [3] [4] [5] [6] [7] [8] [9]"
 			for section in 0..n {
 				let container: char = line.chars().nth(1 + section * 4).unwrap();
 				if container.is_ascii_uppercase() {
-					harbor.push_container(section, container);
+					harbour.push_container(section, container);
 				}
 			}
 		} else { //" 1   2   3   4   5   6   7   8   9 "
 		}
 	}
-	println!("After moves: {}", harbor.to_string());
-	harbor.top_as_str()
+	println!("After moves: {harbour}");
+	harbour.top_as_str()
 }
 
 #[cfg(test)]

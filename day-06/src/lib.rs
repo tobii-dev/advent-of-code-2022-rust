@@ -6,7 +6,7 @@ fn has_repeating(s: &[char]) -> bool {
 			}
 		}
 	}
-	return false;
+	false
 }
 
 pub fn p1(lines: &Vec<String>) -> Vec<usize> {

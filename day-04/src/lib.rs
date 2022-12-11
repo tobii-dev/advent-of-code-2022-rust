@@ -1,5 +1,5 @@
 pub fn section_as_bits(s: &str) -> u128 {
-	let (left, right) = s.split_once("-").unwrap();
+	let (left, right) = s.split_once('-').unwrap();
 	let (mut left, mut right) = (
 		left.parse::<u128>().unwrap(),
 		right.parse::<u128>().unwrap(),
@@ -18,21 +18,11 @@ pub fn section_as_bits(s: &str) -> u128 {
 pub fn p1(lines: &Vec<String>) -> usize {
 	let mut total = 0;
 	for line in lines {
-		let (left, right) = line.split_once(",").unwrap();
-		let (left_bits, right_bits) = (section_as_bits(&left), section_as_bits(&right));
+		let (left, right) = line.split_once(',').unwrap();
+		let (left_bits, right_bits) = (section_as_bits(left), section_as_bits(right));
 		let overlap = left_bits & right_bits;
-		if overlap == left_bits {
-			// right fully contained left
+		if (overlap == left_bits) || (overlap == right_bits) {
 			total += 1;
-			println!("{left}\t{left_bits:#0128b}");
-			println!("{right}\t{right_bits:#0128b}");
-			println!("\t{overlap:#0128b}\n");
-		} else if overlap == right_bits {
-			// left fully contained right
-			total += 1;
-			println!("{left}\t{left_bits:#0128b}");
-			println!("{right}\t{right_bits:#0128b}");
-			println!("\t{overlap:#0128b}\n");
 		}
 	}
 	total
@@ -41,8 +31,8 @@ pub fn p1(lines: &Vec<String>) -> usize {
 pub fn p2(lines: &Vec<String>) -> usize {
 	let mut total = 0;
 	for line in lines {
-		let (left, right) = line.split_once(",").unwrap();
-		let (left_bits, right_bits) = (section_as_bits(&left), section_as_bits(&right));
+		let (left, right) = line.split_once(',').unwrap();
+		let (left_bits, right_bits) = (section_as_bits(left), section_as_bits(right));
 		if (left_bits & right_bits) != 0 {
 			total += 1;
 		}

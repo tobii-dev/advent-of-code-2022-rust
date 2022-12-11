@@ -26,7 +26,7 @@ impl Device {
 			.ptr
 			.borrow_mut()
 			.add_dir(name)
-			.map_err(|e| DeviceError::DirAlreadyExists(e))?;
+			.map_err(DeviceError::DirAlreadyExists)?;
 		dir.borrow_mut().root = Some(self.ptr.clone());
 		Ok(())
 	}
@@ -98,7 +98,7 @@ impl Dir {
 	}
 
 	fn add_dir(&mut self, name: &str) -> Result<Rc<RefCell<Self>>, DirError> {
-		if self.dirs.iter().find(|v| v.borrow().name == name).is_some() {
+		if self.dirs.iter().any(|v| v.borrow().name == name) {
 			return Err(DirError::DirAlreadyExists);
 		}
 		let dir = Dir {
@@ -117,8 +117,7 @@ impl Dir {
 		if self
 			.vars
 			.iter()
-			.find(|(var_name, _var_size)| var_name == name)
-			.is_some()
+			.any(|(var_name, _var_size)| var_name == name)
 		{
 			return Err(DirError::VarAlreadyExists);
 		}
@@ -155,12 +154,12 @@ pub fn p1(lines: &Vec<String>) -> usize {
 
 	for line in lines {
 		if line.starts_with("$ cd /") {
-			//
+			dev.cd(Some("/")).unwrap();
 		} else if line.starts_with("$ ls") {
-			//
+			// TODO: dev.ls(); ?
 		} else if line.starts_with("dir ") {
 			let name = line.split_whitespace().last().unwrap();
-			dev.add_dir(&name).unwrap();
+			dev.add_dir(name).unwrap();
 		} else if line.starts_with("$ cd ..") {
 			dev.cd(None).unwrap();
 		} else if line.starts_with("$ cd ") {
@@ -179,9 +178,10 @@ pub fn p1(lines: &Vec<String>) -> usize {
 		.filter_map(|v| {
 			let size = v.borrow().size;
 			if size <= MAX_SIZE {
-				return Some(size);
-			};
-			return None;
+				Some(size)
+			} else {
+				None
+			}
 		})
 		.sum()
 }
@@ -195,12 +195,12 @@ pub fn p2(lines: &Vec<String>) -> usize {
 
 	for line in lines {
 		if line.starts_with("$ cd /") {
-			//?
+			dev.cd(Some("/")).unwrap();
 		} else if line.starts_with("$ ls") {
-			//?
+			//TODO: dev.ls()?;
 		} else if line.starts_with("dir ") {
 			let name = line.split_whitespace().last().unwrap();
-			dev.add_dir(&name).unwrap();
+			dev.add_dir(name).unwrap();
 		} else if line.starts_with("$ cd ..") {
 			dev.cd(None).unwrap();
 		} else if line.starts_with("$ cd ") {
