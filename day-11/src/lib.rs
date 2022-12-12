@@ -24,11 +24,11 @@ struct Monkey {
 
 impl Monkey {
 	fn from(lines: &[String]) -> Self {
-		let mut op: Option<Op> = None;
-		let mut test_div: Option<isize> = None;
-		let mut test_pass: Option<usize> = None;
-		let mut test_fail: Option<usize> = None;
-		let mut items: Option<VecDeque<_>> = None;
+		let mut op = None;
+		let mut test_div = None;
+		let mut test_pass = None;
+		let mut test_fail = None;
+		let mut items = None;
 		for line in lines {
 			let mut words = line.split_whitespace();
 			if let Some(s) = words.next() {
@@ -102,59 +102,68 @@ impl Monkey {
 		}
 	}
 
-	fn inspect(&mut self, chill_inv: isize, modu: isize) -> (usize, isize) {
+	fn inspect(&mut self, chill_inv: isize, modu: Option<isize>) -> (usize, isize) {
+		self.counter += 1;
 		let mut item = self.items.pop_front().unwrap();
-		// println!("  Monkey inspects an item with a worry level of {item}.");
+		if let Some(modu) = modu {
+			item %= modu;
+		};
+		println!("  Monkey inspects an item with a worry level of {item}.");
 		item = match self.op {
 			Op::Sum(inmm) => {
 				let r = item + inmm;
-				// println!("    Worry level increases by {inmm} to {r}.");
+				println!("    Worry level increases by {inmm} to {r}.");
 				r
 			}
 			Op::Mul(inmm) => {
 				let r = item * inmm;
-				// println!("    Worry level is multiplied by {inmm} to {r}.");
+				println!("    Worry level is multiplied by {inmm} to {r}.");
 				r
 			}
 			Op::Ssq => {
 				let r = item * item;
-				// println!("    Worry level is multiplied by itself to {r}.");
+				println!("    Worry level is multiplied by itself to {r}.");
 				r
 			}
 		};
 		item /= chill_inv;
-		// println!("    Monkey gets bored with item. Worry level is divided by {chill_inv} to {item}.");
+		println!(
+			"    Monkey gets bored with item. Worry level is divided by {chill_inv} to {item}."
+		);
 		let div = self.test.div;
 		let test = item % div == 0;
 		let next = if test {
-			// println!("    Current worry level is divisible by {div}.");
+			println!("    Current worry level is divisible by {div}.");
 			self.test.pass_throw
 		} else {
-			// println!("    Current worry level is not divisible by {div}.");
+			println!("    Current worry level is not divisible by {div}.");
 			self.test.fail_throw
 		};
-		// println!("    Item with worry level {item} is thrown to monkey {next}.");
-        item %= modu;
+		println!("    Item with worry level {item} is thrown to monkey {next}.");
 		(next, item)
 	}
 }
 struct Jungle {
-    chill_inv: isize,
-    modu: isize,
+	chill_inv: isize,
+	modu: Option<isize>,
 	monkeys: Vec<Monkey>,
 }
 
 impl Jungle {
-	fn from(lines: &Vec<String>, chill_inv: isize) -> Self {
-        let mut monkeys = vec![];
-        let mut modu = 1;
+	fn from(lines: &[String], chill_inv: isize) -> Self {
+		let mut monkeys = vec![];
+		let mut modu = 1;
 		for def in lines.chunks(7) {
 			let monkey = Monkey::from(def);
-            modu *= monkey.test.div;
+			modu *= monkey.test.div;
 			monkeys.push(monkey);
 		}
-        dbg!(modu);
-        Jungle { chill_inv , modu, monkeys }
+		let modu = if chill_inv == 1 { Some(modu) } else { None };
+		Jungle {
+			chill_inv,
+			modu,
+			monkeys,
+		}
 	}
 
 	fn run(&mut self, rounds: usize) {
@@ -167,44 +176,39 @@ impl Jungle {
 		for i in 0..self.monkeys.len() {
 			let monkey = self.monkeys.get_mut(i).unwrap();
 			let mut throws = vec![];
-			// println!("Monkey {i}:");
+			println!("Monkey {i}:");
 			while !monkey.items.is_empty() {
-				monkey.counter += 1;
 				throws.push(monkey.inspect(self.chill_inv, self.modu));
 			}
-			if !throws.is_empty() {}
 			for (id, item) in throws {
-				self.monkeys.get_mut(id).unwrap().items.push_back(item); //modumagikmonkebisnis<3 Shout out to my discrete maths teach :p
+				self.monkeys.get_mut(id).unwrap().items.push_back(item);
 			}
 		}
 	}
 
 	fn get_monkey_business(&self) -> usize {
-		let mut max = vec![];
+		let mut max = vec![0, 0];
 		for monkey in &self.monkeys {
 			let c = monkey.counter;
 			max.push(c);
+			max.sort_by(|a, b| b.cmp(a));
+			max.pop();
 		}
-		max.sort();
-		let a = max.pop().unwrap();
-		let b = max.pop().unwrap();
-        dbg!(a, b);
-		a * b
+		max.iter().product()
 	}
 }
 
-pub fn p1(lines: &Vec<String>) -> usize {
+pub fn p1(lines: &[String]) -> usize {
 	let mut jungle = Jungle::from(lines, 3);
 	jungle.run(20);
 	jungle.get_monkey_business()
 }
 
-pub fn p2(lines: &Vec<String>) -> usize {
+pub fn p2(lines: &[String]) -> usize {
 	let mut jungle = Jungle::from(lines, 1);
 	jungle.run(10_000);
 	jungle.get_monkey_business()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -232,7 +236,6 @@ mod tests {
 		let r = p1(&lines);
 		assert_eq!(r, 58786);
 	}
-
 
 	#[test]
 	fn example2() {
