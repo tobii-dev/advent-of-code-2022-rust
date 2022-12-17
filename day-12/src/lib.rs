@@ -102,6 +102,7 @@ impl HeightMap {
 		None
 	}
 
+	//TODO: DRY ..
 	fn moves_rev(&self, cur_pos: (isize, isize)) -> [Option<(isize, isize)>; 4] {
 		let mut movs = [None; 4];
 		for (mov, dir) in movs.iter_mut().zip(DIRS) {
@@ -110,6 +111,7 @@ impl HeightMap {
 		movs
 	}
 
+	//TODO: DRY ..
 	fn do_move_rev(&self, cur_pos: (isize, isize), dir: char) -> Option<(isize, isize)> {
 		let (x, y) = cur_pos;
 		let cur_h = self.get(x, y).unwrap();
@@ -130,7 +132,7 @@ impl HeightMap {
 		None
 	}
 
-	/// Manhattan dist (is consistent)
+	/// Manhattan dist (is consistent) BOOOOOOOOOOOOOOOOOOOOOOOOOOOORIIIIIIIIIIIIIIIIIIIIIIIIING
 	///"The estimate is always less than or equal to
 	/// the estimated distance from any neighbouring
 	/// vertex to the goal,
@@ -142,6 +144,7 @@ impl HeightMap {
 	}
 
 	/// A*
+	//TODO: refactor, and try a new h() for fun
 	fn search(&self) -> Vec<(isize, isize)> {
 		let mut open_set: std::collections::BTreeSet<(isize, isize)> =
 			std::collections::BTreeSet::new();
@@ -191,6 +194,7 @@ impl HeightMap {
 		r
 	}
 
+	//TODO: refactor (this is very slow)
 	fn search_rev(&self) -> Vec<(isize, isize)> {
 		let mut open_set: std::collections::BTreeSet<(isize, isize)> =
 			std::collections::BTreeSet::new();
@@ -286,7 +290,6 @@ mod tests {
 
 	use super::*;
 
-	#[ignore]
 	#[test]
 	fn example1() {
 		let fd = std::fs::File::open("example.txt").unwrap();
@@ -298,7 +301,6 @@ mod tests {
 		assert_eq!(result, 31);
 	}
 
-	#[ignore]
 	#[test]
 	fn part1() {
 		let fd = std::fs::File::open("input.txt").unwrap();
@@ -329,6 +331,6 @@ mod tests {
 			.map(|l| l.unwrap())
 			.collect();
 		let result = p2(&lines);
-		assert_eq!(result, 0);
+		assert_eq!(result, 500);
 	}
 }
