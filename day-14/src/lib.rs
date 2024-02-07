@@ -1,5 +1,3 @@
-//#![allow(unused)]
-
 #[derive(Debug)]
 struct Point {
 	x: usize,
@@ -35,6 +33,16 @@ enum Landing {
 	Rest(Point),
 }
 
+#[derive(Debug)]
+enum Pour {
+	/// Sand reached sand source
+	TouchedSource,
+	/// Sand reached Abyss, shouldn't happen if there is a bottom
+	TouchedAbyss,
+	/// Sand just filling cave
+	StillFilling,
+}
+
 impl std::fmt::Display for Cell {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
 		let c = match self {
@@ -59,7 +67,7 @@ struct Grid {
 impl Point {
 	/// `498,4` -> Point { x: 498, y: 4 }
 	fn from_str(s: &str) -> Self {
-		let mut s = s.trim().split(",");
+		let mut s = s.trim().split(',');
 		let (x, y) = (s.next().unwrap(), s.next().unwrap());
 		let (x, y) = (x.parse().unwrap(), y.parse().unwrap());
 		Self { x, y }
@@ -96,7 +104,6 @@ impl Path {
 			let point = Point::from_str(s);
 			max.grow(&point);
 			min.shrink(&point);
-			dbg!(&point);
 			points.push(point);
 		}
 		Self { points, max, min }
@@ -108,7 +115,7 @@ impl Grid {
 		self.rows.get(y)?.get(x)
 	}
 
-	fn from_lines(lines: &[String], source_coords: (usize, usize)) -> Self {
+	fn from_lines(lines: &[String], source_coords: (usize, usize), bottom: bool) -> Self {
 		let mut paths: Vec<Path> = vec![];
 		let (mut max, mut min) = (Point::new_min(), Point::new_max());
 		for line in lines {
@@ -117,7 +124,18 @@ impl Grid {
 			min.shrink(&path.min);
 			paths.push(path);
 		}
-		let (w, h) = (max.x + 1, max.y + 1);
+
+		let src = Point::new(source_coords);
+
+		if bottom {
+			max.y = max.y.saturating_add(2);
+			min.x = min.x.min(src.x.saturating_sub(max.y));
+			max.x = max.x.max(src.x.saturating_add(max.y));
+		} else {
+			max.x += 1;
+			max.y += 1;
+		}
+		let (w, h) = (max.x, max.y);
 		let mut rows = Vec::with_capacity(h);
 		for _y in 0..=h {
 			let mut row: Vec<Cell> = Vec::with_capacity(w);
@@ -132,6 +150,7 @@ impl Grid {
 				if p0.x == p1.x {
 					let x = p0.x;
 					let (y0, y1) = (p0.y.min(p1.y), p0.y.max(p1.y));
+					#[allow(clippy::needless_range_loop)]
 					for y in y0..=y1 {
 						rows[y][x] = Cell::R;
 					}
@@ -142,13 +161,19 @@ impl Grid {
 						rows[y][x] = Cell::R;
 					}
 				} else {
-					unreachable!("Path movement must be strictly vertical/horitzontal");
+					unreachable!("Path must be strictly vertical/horitzontal");
 				}
 			}
 		}
-		let src = Point::new(source_coords);
-		rows[src.y][src.x] = Cell::P;
 
+		if bottom {
+			let y = max.y;
+			for x in min.x..=w {
+				rows[y][x] = Cell::R;
+			}
+		}
+
+		rows[src.y][src.x] = Cell::P;
 		let rest = 0;
 
 		Self {
@@ -160,21 +185,27 @@ impl Grid {
 		}
 	}
 
-	fn pour(&mut self) -> bool {
+	fn pour(&mut self) -> Pour {
 		let mut current_pos = Point::new((self.src.x, self.src.y));
 		loop {
 			let fall = self.fall(&current_pos);
 			match fall {
-				Landing::Abyss => break true,
+				Landing::Abyss => {
+					// This should never happen if there is a bottom
+					break Pour::TouchedAbyss;
+				}
 				Landing::Airborne(pos) => {
 					current_pos = pos;
 				}
 				Landing::Rest(pos) => {
 					let (x, y) = (pos.x, pos.y);
 					self.rows[y][x] = Cell::S;
-					println!("{self}");
 					self.rest += 1;
-					break false;
+					break if (x == self.src.x) && (y == self.src.y) {
+						Pour::TouchedSource
+					} else {
+						Pour::StillFilling
+					};
 				}
 			}
 		}
@@ -200,13 +231,13 @@ impl Grid {
 				return Landing::Airborne(Point::new((candidate.x, candidate.y)));
 			}
 		}
-		return Landing::Rest(Point::new((current_pos.x, current_pos.y)));
+		Landing::Rest(Point::new((current_pos.x, current_pos.y)))
 	}
 }
 
 impl std::fmt::Display for Grid {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-		let (max_w, max_h) = (self.max.x + 1, self.max.y + 1);
+		let (max_w, max_h) = (self.max.x, self.max.y);
 		let (min_w, min_h) = (self.min.x - 1, 0);
 		for y in min_h..=max_h {
 			for x in min_w..=max_w {
@@ -222,16 +253,20 @@ impl std::fmt::Display for Grid {
 	}
 }
 
-pub fn p1(lines: &Vec<String>) -> usize {
+pub fn p1(lines: &[String]) -> usize {
 	const SOURCE_COORDS: (usize, usize) = (500, 0);
-	let mut grid = Grid::from_lines(lines, SOURCE_COORDS);
-	println!("{grid}");
-	while !grid.pour() {}
+	const BOTTOM: bool = false;
+	let mut grid = Grid::from_lines(lines, SOURCE_COORDS, BOTTOM);
+	while let Pour::StillFilling = grid.pour() {}
 	grid.rest
 }
 
-pub fn p2(lines: &Vec<String>) -> usize {
-	p1(lines)
+pub fn p2(lines: &[String]) -> usize {
+	const SOURCE_COORDS: (usize, usize) = (500, 0);
+	const BOTTOM: bool = true;
+	let mut grid = Grid::from_lines(lines, SOURCE_COORDS, BOTTOM);
+	while let Pour::StillFilling = grid.pour() {}
+	grid.rest
 }
 
 #[cfg(test)]
@@ -262,7 +297,6 @@ mod tests {
 		assert_eq!(result, 901);
 	}
 
-	#[ignore]
 	#[test]
 	fn example2() {
 		let fd = std::fs::File::open("example.txt").unwrap();
@@ -271,10 +305,9 @@ mod tests {
 			.map(|l| l.unwrap())
 			.collect();
 		let result = p2(&lines);
-		assert_eq!(result, 0);
+		assert_eq!(result, 93);
 	}
 
-	#[ignore]
 	#[test]
 	fn part2() {
 		let fd = std::fs::File::open("input.txt").unwrap();
@@ -283,6 +316,6 @@ mod tests {
 			.map(|l| l.unwrap())
 			.collect();
 		let result = p2(&lines);
-		assert_eq!(result, 0);
+		assert_eq!(result, 24589);
 	}
 }
