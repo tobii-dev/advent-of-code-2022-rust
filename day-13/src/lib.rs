@@ -73,6 +73,18 @@ impl PacketData {
 }
 
 impl Packet {
+	fn list_from_lines(lines: &[String]) -> Vec<Self> {
+		let mut lines = lines.iter();
+		lines
+			.filter_map(|line| {
+				if line.is_empty() {
+					None
+				} else {
+					Some(Self::from_str(line))
+				}
+			})
+			.collect()
+	}
 	fn from_str(s: &str) -> Self {
 		let data = PacketData::from_str(s).unwrap();
 		Self { data }
@@ -84,7 +96,7 @@ impl Packet {
 }
 
 impl PacketPair {
-	fn list_from_lines(lines: &Vec<String>) -> Vec<Self> {
+	fn list_from_lines(lines: &[String]) -> Vec<Self> {
 		let mut lines = lines.iter();
 		let mut v = vec![];
 		while let (Some(l), Some(r), _empty_line) = (lines.next(), lines.next(), lines.next()) {
@@ -107,7 +119,7 @@ impl PacketPair {
 	}
 }
 
-pub fn p1(lines: &Vec<String>) -> usize {
+pub fn p1(lines: &[String]) -> usize {
 	let pairs = PacketPair::list_from_lines(lines);
 	let mut sum = 0;
 	for (idx, pair) in pairs.iter().enumerate() {
@@ -121,15 +133,29 @@ pub fn p1(lines: &Vec<String>) -> usize {
 	sum
 }
 
-pub fn p2(lines: &Vec<String>) -> usize {
-	p1(lines)
+pub fn p2(lines: &[String]) -> usize {
+	const DIVIDER_PACKETS_STR: &[&str] = &["[[2]]", "[[6]]"];
+	let mut packets = Packet::list_from_lines(lines);
+	packets.sort_by(|a, b| a.compare(b));
+	DIVIDER_PACKETS_STR
+		.iter()
+		.map(|ps| Packet::from_str(ps))
+		.map(
+			|divider_packet| match packets.binary_search_by(|p| p.compare(&divider_packet)) {
+				Ok(pos) => unreachable!("Error: DIVIDER already in packet list?"),
+				Err(pos) => {
+					packets.insert(pos, divider_packet);
+					pos + 1
+				}
+			},
+		)
+		.product()
 }
 
 #[cfg(test)]
 mod tests {
-	use std::io::BufRead;
-
 	use super::*;
+	use std::io::BufRead;
 
 	#[test]
 	fn example1() {
@@ -150,11 +176,9 @@ mod tests {
 			.map(|l| l.unwrap())
 			.collect();
 		let result = p1(&lines);
-		dbg!(result);
 		assert_eq!(result, 5330);
 	}
 
-	#[ignore]
 	#[test]
 	fn example2() {
 		let fd = std::fs::File::open("example.txt").unwrap();
@@ -163,10 +187,9 @@ mod tests {
 			.map(|l| l.unwrap())
 			.collect();
 		let result = p2(&lines);
-		assert_eq!(result, 0);
+		assert_eq!(result, 140);
 	}
 
-	#[ignore]
 	#[test]
 	fn part2() {
 		let fd = std::fs::File::open("input.txt").unwrap();
@@ -175,6 +198,6 @@ mod tests {
 			.map(|l| l.unwrap())
 			.collect();
 		let result = p2(&lines);
-		assert_eq!(result, 0);
+		assert_eq!(result, 27648);
 	}
 }
